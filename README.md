@@ -24,10 +24,10 @@ $ cd ollama-tools
 $ npm i
 ```
 
-- Run the agent
+- Run the agent with your prompt
 
 ```sh
-$ npm start
+$ npm start "Is it Friday yet?"
 ```
 
 ## Creating tools
