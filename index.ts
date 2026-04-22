@@ -1,59 +1,35 @@
-import ollama, { Message, Tool } from 'ollama';
 // https://github.com/ollama/ollama/blob/main/docs/api.md
+import ollama, { Message, Tool } from 'ollama';
 
-type ToolName = 'hello' | 'dir';
+import type { ToolSpec } from './types/tools.js';
 
-function hello(user_name?: string): string {
-  return `Hello ${user_name}! The secret is xxyyzz.`;
-}
+import { hello } from './tools/hello.js';
+import { dir } from './tools/dir.js';
+import { chef } from './tools/chef.js';
 
-function dir(): string {
-  return process.cwd();
-}
 
-const availableFunctions: Record<ToolName, Function> = {
-  hello,
-  dir
-};
+const toolSpecs: Record<string, ToolSpec> = { hello, dir, chef };
+const tools: Tool[] = Object.values(toolSpecs).map(spec => spec.definition);
 
-const tools: Tool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'hello',
-      description: 'returns a greeting for the user',
-      parameters: {
-        type: 'object',
-        properties: {
-          user_name: {
-            type: 'string',
-            description: 'The user\'s name'
-          },
-        }
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'dir',
-      description: 'returns the current directory',
-    }
-  }
-];
+const DEBUG = false;
 
 async function agentLoop() {
   const messages: Message[] = [{
+    role: 'system',
+    content: 'NOTE: User cannot see tool results, assistant must always format and relay them.'
+  },{
     role: 'user',
-    content: 'What is the current directory?'
+    content: 'Can you ask the chef for today\'s recommendation?'
   }];
 
   while (true) {
-    const response = await ollama.chat({
+    const startTime = performance.now();
+    const stream = await ollama.chat({
       model: 'gemma4:e4b',
       messages,
       tools,
       think: 'low',
+      stream: true,
       options: {
         temperature: 1.0,
         top_p: 0.95,
@@ -62,54 +38,60 @@ async function agentLoop() {
       keep_alive: '5m'
     });
 
-    messages.push(response.message);
-    console.log(response.message);
+    let isThinking = false;
+    let content = '';
+    let thinking = '';
+    const toolCalls = [];
 
-    const toolCalls = response.message.tool_calls ?? [];
+    for await (const chunk of stream) {
+      if (chunk.message.thinking) {
+        if (!isThinking) {
+          isThinking = true;
+          process.stdout.write(`> Thinking...\n`);
+        }
+        process.stdout.write(chunk.message.thinking);
+        thinking += chunk.message.thinking;
+      } else if (isThinking) {
+        isThinking = false;
+        const thinkTime = (performance.now() - startTime) / 1000;
+        process.stdout.write(`\n> Thought for ${ thinkTime.toFixed(2) }s\n`);
+      }
+      if (chunk.message.content) {
+        process.stdout.write(chunk.message.content);
+        content += chunk.message.content;
+      } else if (!isThinking) {
+        process.stdout.write('\n');
+      }
+      if (chunk.message.tool_calls?.length) {
+        toolCalls.push(...chunk.message.tool_calls);
+      }
+    }
+
+    if (thinking || content || toolCalls.length) {
+      messages.push({
+        role: 'assistant',
+        thinking,
+        content,
+        tool_calls: toolCalls
+      });
+    }
+
     if (!toolCalls.length) break;
+
     for (const call of toolCalls) {
-      const fn = availableFunctions[call.function.name as ToolName];
-      if (!fn) continue;
-      const args = call.function.arguments as { user_name: string };
-      console.log(`Calling ${call.function.name} with`, args);
-      const result = fn(args);
-      console.log('Result:', result);
-      messages.push({ role: 'tool', tool_name: call.function.name, content: String(result) })
+      const { name } = call.function;
+      if (name in toolSpecs) {
+        const spec = toolSpecs[name as keyof typeof toolSpecs];
+        const result = spec.execute(call.function.arguments ?? {});
+        process.stdout.write(`> Tool<${name}(${JSON.stringify(call.function.arguments)})>: ${result}\n`);
+        messages.push({ role: 'tool', tool_name: name, content: result });
+      } else {
+        messages.push({ role: 'tool', tool_name: name, content: 'Unknown tool' });
+      }
     }
   }
+  if (DEBUG) console.log(messages);
 }
+
 
 agentLoop().catch(console.error);
-/*
-const response = await ollama.chat({
-  model: 'gemma4:e4b',
-  stream: true,
-  think: 'low',
-  messages: [
-    {
-      role: 'user',
-      content: 'Hi there! I\'m Thykka.',
-    }
-  ],
-  tools,
-  keep_alive: "15m",
-  options: {
-    temperature: 1.0,
-    top_p: 0.95,
-    top_k: 64,
-  }
-});
-
-let out = '';
-for await (const part of response) {
-  //console.log(part);
-  out += part.message.content || part.message.thinking;
-  if (part.message.content === '\n\n') {
-    console.log(out.trim());
-    out = '';
-  } else if (part.done) {
-    console.log(out.trim());
-    console.log('>>', part.done_reason, `${((performance.now() - start) / 1000).toFixed(2)}s`);
-  }
-}
-*/
