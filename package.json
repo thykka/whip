@@ -1,0 +1,19 @@
+{
+  "name": "ollama-tools",
+  "version": "0.0.1",
+  "description": "Local tool calling",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "type": "module",
+  "author": "Moses Holmström",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ollama": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0"
+  }
+}
