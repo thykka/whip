@@ -1,28 +1,26 @@
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 import ollama, { Message, Tool } from 'ollama';
-
-import type { ToolSpec } from './types/tools.js';
-
-import { hello } from './tools/hello.js';
-import { env } from './tools/env.js';
-import { dice } from './tools/dice.js';
-import { timeDate } from './tools/timedate.js';
-import { readDir, readFile } from './tools/fs.js';
-
-const toolSpecs: Record<string, ToolSpec> = { hello, env, dice, timeDate, readDir, readFile };
-const tools: Tool[] = Object.values(toolSpecs).map(spec => spec.definition);
+import { loadTools } from './tool-loader.js';
 
 const DEBUG = false;
 
 const Color = {
-  reset: '\u001b[0m',
-  cyan: '\u001b[36m',
-  grey: '\u001b[90m'
+  reset: '\x1b[0m',
+  cyan: '\x1b[36m',
+  grey: '\x1b[90m',
+  red: '\x1b[31m'
 };
 
 const [nodePath, scriptPath, ...prompt] = process.argv;
 
 async function agentLoop() {
+  const toolSpecs = await loadTools();
+  const tools = toolSpecs
+    .values()
+    .toArray()
+    .map(spec => spec.definition);
+  console.log(`${Color.cyan}${tools.length} tools loaded; ${tools.map(tool => tool.function.name).join(' ')}\n`);
+
   const messages: Message[] = [
     {
       role: 'user',
@@ -86,8 +84,8 @@ async function agentLoop() {
 
     for (const call of toolCalls) {
       const { name } = call.function;
-      if (name in toolSpecs) {
-        const spec = toolSpecs[name as keyof typeof toolSpecs];
+      const spec = toolSpecs.get(name);
+      if (spec) {
         process.stdout.write(`\n${Color.cyan}> Tool<${name}(${JSON.stringify(call.function.arguments)})>\n`);
         const result = spec.execute(call.function.arguments ?? {});
         process.stdout.write(`${result}${Color.reset}\n\n`);
@@ -104,5 +102,15 @@ async function agentLoop() {
   process.stdout.write('\n\n');
   if (DEBUG) console.log(messages);
 }
+
+function shutdown() {
+  process.stdout.write(`${Color.red}\nShutting down...${Color.reset}\n`);
+  ollama.abort();
+  process.exit();
+}
+
+['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGQUIT'].forEach(signal => {
+  process.on(signal, shutdown);
+});
 
 agentLoop().catch(console.error);
