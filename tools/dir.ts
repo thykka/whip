@@ -1,4 +1,4 @@
-import { ToolSpec } from "../types/tools";
+import { ToolSpec } from '../types/tools';
 
 export function dirFn(): string {
   return process.cwd();
@@ -13,6 +13,6 @@ export const dir: ToolSpec = {
     }
   },
   execute: _ => dirFn()
-}
+};
 
 export default dir;

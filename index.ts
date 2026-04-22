@@ -8,7 +8,6 @@ import { dir } from './tools/dir.js';
 import { chef } from './tools/chef.js';
 import { timeDate } from './tools/timedate.js';
 
-
 const toolSpecs: Record<string, ToolSpec> = { hello, dir, chef, timeDate };
 const tools: Tool[] = Object.values(toolSpecs).map(spec => spec.definition);
 
@@ -18,18 +17,21 @@ const Color = {
   reset: '\u001b[0m',
   cyan: '\u001b[36m',
   grey: '\u001b[90m'
-}
+};
 
 const [nodePath, scriptPath, ...prompt] = process.argv;
 
 async function agentLoop() {
-  const messages: Message[] = [{
-    role: 'system',
-    content: 'NOTE: User cannot see tool results, assistant must always format and relay them.'
-  },{
-    role: 'user',
-    content: prompt.join(' ') ?? '(blank message)'
-  }];
+  const messages: Message[] = [
+    {
+      role: 'system',
+      content: 'NOTE: User cannot see tool results, assistant must always format and relay them.'
+    },
+    {
+      role: 'user',
+      content: prompt.join(' ') ?? '(blank message)'
+    }
+  ];
 
   while (true) {
     const startTime = performance.now();
@@ -42,7 +44,7 @@ async function agentLoop() {
       options: {
         temperature: 1.0,
         top_p: 0.95,
-        top_k: 64,
+        top_k: 64
       },
       keep_alive: '5m'
     });
@@ -63,7 +65,7 @@ async function agentLoop() {
       } else if (isThinking) {
         isThinking = false;
         const thinkTime = (performance.now() - startTime) / 1000;
-        process.stdout.write(`\n> Thought for ${ thinkTime.toFixed(2) }s\n${Color.reset}`);
+        process.stdout.write(`\n> Thought for ${thinkTime.toFixed(2)}s\n${Color.reset}`);
       }
       if (chunk.message.content) {
         process.stdout.write(chunk.message.content);
@@ -92,16 +94,21 @@ async function agentLoop() {
       if (name in toolSpecs) {
         const spec = toolSpecs[name as keyof typeof toolSpecs];
         const result = spec.execute(call.function.arguments ?? {});
-        process.stdout.write(`${Color.cyan}> Tool<${name}(${JSON.stringify(call.function.arguments)})>: ${result}\n\n${Color.reset}`);
+        process.stdout.write(
+          `${Color.cyan}> Tool<${name}(${JSON.stringify(call.function.arguments)})>: ${result}\n\n${Color.reset}`
+        );
         messages.push({ role: 'tool', tool_name: name, content: result });
       } else {
-        messages.push({ role: 'tool', tool_name: name, content: 'Unknown tool' });
+        messages.push({
+          role: 'tool',
+          tool_name: name,
+          content: 'Unknown tool'
+        });
       }
     }
   }
   process.stdout.write('\n');
   if (DEBUG) console.log(messages);
 }
-
 
 agentLoop().catch(console.error);

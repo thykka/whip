@@ -1,4 +1,4 @@
-import { ToolSpec } from "../types/tools";
+import { ToolSpec } from '../types/tools';
 
 const chefAnswers = ['🧑‍🍳', '🍳', '🍔'];
 
@@ -24,6 +24,6 @@ export const chef: ToolSpec = {
     }
   },
   execute: args => chefFn(args.question as string)
-}
+};
 
 export default chef;

@@ -1,10 +1,10 @@
-import { ToolSpec } from "../types/tools";
+import { ToolSpec } from '../types/tools';
 
 export function timeDateFn(locale: string): string {
   return new Intl.DateTimeFormat(locale ?? ['en-US'], {
     dateStyle: 'full',
     timeStyle: 'full',
-    timeZone: "Europe/Helsinki",
+    timeZone: 'Europe/Helsinki'
   }).format(new Date());
 }
 
@@ -26,6 +26,6 @@ export const timeDate: ToolSpec = {
     }
   },
   execute: _ => timeDateFn(_.locale as string)
-}
+};
 
 export default timeDate;
