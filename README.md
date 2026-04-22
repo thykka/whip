@@ -19,7 +19,7 @@ $ ollama install gemma4:e4b
 - Clone the repo, `cd` into the project root and install Node.js dependencies:
 
 ```sh
-$ git clone git@github.com:thykka/ollama-tools.git
+$ git clone git@github.com:thykka/whip.git
 $ cd ollama-tools
 $ npm i
 ```
