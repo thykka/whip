@@ -6,12 +6,21 @@ import type { ToolSpec } from './types/tools.js';
 import { hello } from './tools/hello.js';
 import { dir } from './tools/dir.js';
 import { chef } from './tools/chef.js';
+import { timeDate } from './tools/timedate.js';
 
 
-const toolSpecs: Record<string, ToolSpec> = { hello, dir, chef };
+const toolSpecs: Record<string, ToolSpec> = { hello, dir, chef, timeDate };
 const tools: Tool[] = Object.values(toolSpecs).map(spec => spec.definition);
 
 const DEBUG = false;
+
+const Color = {
+  reset: '\u001b[0m',
+  cyan: '\u001b[36m',
+  grey: '\u001b[90m'
+}
+
+const [nodePath, scriptPath, ...prompt] = process.argv;
 
 async function agentLoop() {
   const messages: Message[] = [{
@@ -19,7 +28,7 @@ async function agentLoop() {
     content: 'NOTE: User cannot see tool results, assistant must always format and relay them.'
   },{
     role: 'user',
-    content: 'Can you ask the chef for today\'s recommendation?'
+    content: prompt.join(' ') ?? '(blank message)'
   }];
 
   while (true) {
@@ -47,14 +56,14 @@ async function agentLoop() {
       if (chunk.message.thinking) {
         if (!isThinking) {
           isThinking = true;
-          process.stdout.write(`> Thinking...\n`);
+          process.stdout.write(`${Color.grey}> Thinking...\n`);
         }
         process.stdout.write(chunk.message.thinking);
         thinking += chunk.message.thinking;
       } else if (isThinking) {
         isThinking = false;
         const thinkTime = (performance.now() - startTime) / 1000;
-        process.stdout.write(`\n> Thought for ${ thinkTime.toFixed(2) }s\n`);
+        process.stdout.write(`\n> Thought for ${ thinkTime.toFixed(2) }s\n${Color.reset}`);
       }
       if (chunk.message.content) {
         process.stdout.write(chunk.message.content);
@@ -83,13 +92,14 @@ async function agentLoop() {
       if (name in toolSpecs) {
         const spec = toolSpecs[name as keyof typeof toolSpecs];
         const result = spec.execute(call.function.arguments ?? {});
-        process.stdout.write(`> Tool<${name}(${JSON.stringify(call.function.arguments)})>: ${result}\n`);
+        process.stdout.write(`${Color.cyan}> Tool<${name}(${JSON.stringify(call.function.arguments)})>: ${result}\n\n${Color.reset}`);
         messages.push({ role: 'tool', tool_name: name, content: result });
       } else {
         messages.push({ role: 'tool', tool_name: name, content: 'Unknown tool' });
       }
     }
   }
+  process.stdout.write('\n');
   if (DEBUG) console.log(messages);
 }
 
