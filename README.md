@@ -30,6 +30,9 @@ $ npm i
 $ npm start "Is it Friday yet?"
 ```
 
+> [!NOTE]
+> The provided `webSearch` tool utilizes Kagi search, which is a paid service. Copy [.env.example](./.env.example) as `.env` and edit in your Kagi session token to enable this feature.
+
 ## Creating tools
 
 Copy [`hello`](./tools/hello.ts) for a simple starting point.

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { pathToFileURL } from 'url';
-import { ToolSpec } from './types/tools';
+import { ToolSpec } from '../types/tools';
 
 const toolDirectory = path.join(process.cwd(), './tools');
 const toolFiles = fs.readdirSync(toolDirectory).filter(file => file.endsWith('.ts'));

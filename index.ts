@@ -1,8 +1,8 @@
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 import ollama, { Message, Tool } from 'ollama';
-import { loadTools } from './tool-loader.js';
-
-const DEBUG = false;
+import { loadTools } from './utils/tool-loader.js';
+import { config } from 'dotenv';
+config();
 
 const Color = {
   reset: '\x1b[0m',
@@ -87,7 +87,7 @@ async function agentLoop() {
       const spec = toolSpecs.get(name);
       if (spec) {
         process.stdout.write(`\n${Color.cyan}> Tool<${name}(${JSON.stringify(call.function.arguments)})>\n`);
-        const result = spec.execute(call.function.arguments ?? {});
+        const result = await spec.execute(call.function.arguments ?? {});
         process.stdout.write(`${result}${Color.reset}\n\n`);
         messages.push({ role: 'tool', tool_name: name, content: result });
       } else {
@@ -100,7 +100,7 @@ async function agentLoop() {
     }
   }
   process.stdout.write('\n\n');
-  if (DEBUG) console.log(messages);
+  if (process.env.DEBUG) console.log(messages);
 }
 
 function shutdown() {

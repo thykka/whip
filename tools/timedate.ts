@@ -25,7 +25,7 @@ export const timeDate: ToolSpec = {
       }
     }
   },
-  execute: _ => timeDateFn(_.locale as string)
+  execute: _ => timeDateFn(_?.locale as string)
 };
 
 export default timeDate;

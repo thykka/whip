@@ -21,7 +21,7 @@ export const hello: ToolSpec = {
       }
     }
   },
-  execute: args => helloFn(args.user_name as string | undefined)
+  execute: args => helloFn(args?.user_name as string | undefined)
 };
 
 export default hello;

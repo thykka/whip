@@ -1,6 +1,8 @@
-import { Tool } from 'ollama';
+import { Tool as ToolDefinition } from 'ollama';
+
+type ToolExecutor = (args?: Record<string, unknown>) => string | Promise<string>;
 
 export type ToolSpec = {
-  definition: Tool;
-  execute: (args: Record<string, unknown>) => string;
+  definition: ToolDefinition;
+  execute: ToolExecutor;
 };
