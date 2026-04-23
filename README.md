@@ -35,5 +35,4 @@ $ npm start "Is it Friday yet?"
 
 ## Creating tools
 
-Copy [`hello`](./tools/hello.ts) for a simple starting point.
-Remember to import and add your tool to the `toolSpecs` object in [index.ts](./index.ts).
+Copy [`hello`](./tools/hello.ts) for a simple starting point. `.ts` files within the `tools` directory are automatically loaded. Tools can be disabled using environment variables.

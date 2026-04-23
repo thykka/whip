@@ -7,9 +7,14 @@ const toolDirectory = path.join(process.cwd(), './tools');
 const toolFiles = fs.readdirSync(toolDirectory).filter(file => file.endsWith('.ts'));
 
 export async function loadTools(): Promise<Map<string, ToolSpec>> {
+  const disableList = process.env.TOOLS_DISABLED?.split(' ').map(tool => tool + '.ts') ?? [];
+
   const tools = new Map<string, ToolSpec>();
 
   for (const file of toolFiles) {
+    if (disableList.includes(file)) {
+      continue;
+    }
     const modulePath = path.join(toolDirectory, file);
 
     try {
